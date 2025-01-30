@@ -1,55 +1,79 @@
 import streamlit as st
 from educhain import Educhain, LLMConfig
 from langchain_deepseek import ChatDeepSeek
+import json
 
 # Initialize Educhain with DeepSeek
 @st.cache_resource
 def initialize_llm():
     llm = ChatDeepSeek(model="deepseek-chat")
-    llm_config=LLMConfig(custom_model=llm)
+    llm_config = LLMConfig(custom_model=llm)
     return Educhain(llm_config)
 
 client = initialize_llm()
 
 # Streamlit UI
-st.title("🧠 AI MCQ Generator")
-st.write("Generate MCQs instantly with DeepSeek")
+st.title("🧠 AI MCQ Generator with DeepSeek")
+st.write("Generate multiple-choice questions for educational purposes")
 
-# Simple configuration
-topic = st.text_input("Enter topic", "Artificial Intelligence")
-num_questions = st.slider("Number of questions", 1, 5, 3)
-difficulty = st.selectbox("Difficulty level", ["Easy", "Medium", "Hard"])
+# Configuration
+with st.sidebar:
+    st.header("Settings")
+    topic = st.text_input("Topic", "Artificial Intelligence")
+    num_questions = st.slider("Number of Questions", 1, 10, 5)
+    difficulty = st.selectbox("Difficulty", ["Easy", "Medium", "Hard"])
+    
+    use_cases = {
+        "Exam Questions": {"difficulty": "Hard", "hint": "Include common misconceptions"},
+        "Practice Quiz": {"difficulty": "Medium", "hint": "Add explanations"},
+        "Custom": {"difficulty": difficulty, "hint": ""}
+    }
+    selected_case = st.selectbox("Use Case", list(use_cases.keys()))
 
-if st.button("Generate Questions"):
-    with st.spinner("Creating questions..."):
+# Apply use case presets
+if selected_case != "Custom":
+    preset = use_cases[selected_case]
+    difficulty = preset["difficulty"]
+    custom_hint = preset["hint"]
+else:
+    custom_hint = st.text_area("Additional Instructions")
+
+# Generation and display
+if st.button("Generate MCQs"):
+    with st.spinner(f"Creating {num_questions} {difficulty} questions about {topic}..."):
         try:
-            mcqs = client.qna_engine.generate_questions(
+            # Generate questions
+            result = client.generate(
                 topic=topic,
-                num=num_questions,
-                question_type="Multiple Choice",
-                difficulty_level=difficulty
+                num_questions=num_questions,
+                difficulty=difficulty,
+                additional_instructions=custom_hint
             )
             
-            for i, question in enumerate(mcqs.questions, 1):
+            # Display results
+            st.subheader("Generated Questions")
+            for i, question in enumerate(result.get("questions", []), 1):
                 with st.expander(f"Question {i}", expanded=True):
-                    st.markdown(f"**{question.question}**")
-                    
-                    # Display options with letters
-                    for j, option in enumerate(question.options, 1):
-                        st.write(f"{chr(64+j)}. {option}")
-                    
-                    # Handle different answer formats
-                    if hasattr(question, 'correct_answer'):
-                        answer = question.correct_answer
-                    elif hasattr(question, 'correct_option'):
-                        answer = question.options[question.correct_option-1]
-                    else:
-                        answer = "Could not determine correct answer"
-                    
-                    st.success(f"**Answer:** {answer}")
-                    
-                    if hasattr(question, 'explanation'):
-                        st.info(f"*Explanation:* {question.explanation}")
-
+                    st.markdown(f"**{question['question']}**")
+                    st.write("Options:")
+                    for opt in question.get("options", []):
+                        st.write(f"- {opt}")
+                    st.success(f"Answer: {question.get('answer', '')}")
+                    if question.get("explanation"):
+                        st.info(f"Explanation: {question['explanation']}")
+            
+            # Download feature
+            if result.get("questions"):
+                st.download_button(
+                    label="Download Questions",
+                    data=json.dumps(result, indent=2),
+                    file_name="generated_questions.json",
+                    mime="application/json"
+                )
+            
         except Exception as e:
-            st.error(f"Failed to generate questions: {str(e)}")
+            st.error(f"Generation failed: {str(e)}")
+            st.info("Please check your inputs and try again")
+
+st.markdown("---")
+st.caption("Note: Generated content should be reviewed by subject matter experts")
