@@ -42,7 +42,7 @@ else:
 # Modified generate function (assuming Educhain class has a generate method)
 def generate_mcqs(client, topic, num_questions, difficulty, custom_hint):
     try:
-        result = client.qna_engine.generate_questions(
+        result = client.generate(
             topic=topic,
             num_questions=num_questions,
             difficulty=difficulty,
@@ -56,6 +56,7 @@ def generate_mcqs(client, topic, num_questions, difficulty, custom_hint):
 
         st.info("Please check your inputs, network, and try again later. If the error persists, it may indicate an issue with the LLM service.")
         return None  # Return None to avoid further processing
+
 # Generation and display
 if st.button("Generate MCQs"):
     with st.spinner(f"Creating {num_questions} {difficulty} questions about {topic}..."):
@@ -65,7 +66,8 @@ if st.button("Generate MCQs"):
         if result:
             # Display results
             st.subheader("Generated Questions")
-            for i, question in enumerate(result.get("questions", []), 1):
+            # Changed to access `result.questions` directly instead of .get("questions")
+            for i, question in enumerate(result.questions, 1): 
                 with st.expander(f"Question {i}", expanded=True):
                     st.markdown(f"**{question['question']}**")
                     st.write("Options:")
@@ -76,10 +78,11 @@ if st.button("Generate MCQs"):
                         st.info(f"Explanation: {question['explanation']}")
             
             # Download feature
-            if result.get("questions"):
+            # Assuming that `result` itself can be converted to JSON since it contains the questions
+            if result.questions: 
                 st.download_button(
                     label="Download Questions",
-                    data=json.dumps(result, indent=2),
+                    data=json.dumps(result.__dict__, indent=2),
                     file_name="generated_questions.json",
                     mime="application/json"
                 )
