@@ -42,7 +42,7 @@ else:
 # Modified generate function (assuming Educhain class has a generate method)
 def generate_mcqs(client, topic, num_questions, difficulty, custom_hint):
     try:
-        result = client.generate(
+        result = client.qna_engine.generate_questions(
             topic=topic,
             num_questions=num_questions,
             difficulty=difficulty,
