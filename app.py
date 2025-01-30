@@ -110,8 +110,13 @@ if generate_button:
                         options_display += f"{chr(64 + idx)}. {option}  \n"
                     st.markdown(f"**Options:**  \n{options_display}")
 
-                    # Display correct answer
-                    st.markdown(f"**Correct Answer:** {q_data.correct_answer}")
+                    # Display correct answer (if available)
+                    if hasattr(q_data, "correct_answer"):
+                        st.markdown(f"**Correct Answer:** {q_data.correct_answer}")
+                    elif hasattr(q_data, "answer"):  # Fallback to 'answer' if 'correct_answer' is not available
+                        st.markdown(f"**Correct Answer:** {q_data.answer}")
+                    else:
+                        st.warning("Correct answer not available.")
 
                     # Display explanation (if available)
                     if hasattr(q_data, "explanation") and q_data.explanation:
