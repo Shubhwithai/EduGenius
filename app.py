@@ -27,52 +27,57 @@ custom_hint = st.text_area("Additional Instructions (Optional)")
 if st.button("Generate MCQs"):
     with st.spinner(f"Creating {num_questions} questions about {topic}..."):
         try:
-            # Generate questions
-            result = client.qna_engine.generate_questions(
+            # Generate questions with proper encoding
+            response = client.qna_engine.generate_questions(
                 topic=topic,
-                num_questions=num_questions,  # Using the actual number from slider
+                num_questions=num_questions,
                 difficulty=difficulty,
                 additional_instructions=custom_hint
             )
             
-            # Display results
-            st.subheader("Generated Questions")
-            
-            # Get questions from the MCQList object
-            questions = result.questions
-            
-            # Display all questions
-            for i, question in enumerate(questions, 1):
-                with st.expander(f"Question {i}", expanded=True):
-                    st.markdown(f"**Question:** {question.question}")
-                    st.write("**Options:**")
-                    for j, opt in enumerate(question.options, 1):
-                        st.write(f"{j}. {opt}")
-                    st.success(f"**Correct Answer:** {question.answer}")
-                    if hasattr(question, 'explanation'):
-                        st.info(f"**Explanation:** {question.explanation}")
-        
-            # Download feature
-            if questions:
-                questions_dict = [
-                    {
-                        "question": q.question,
-                        "options": q.options,
-                        "answer": q.answer,
-                        "explanation": getattr(q, 'explanation', '')
-                    }
-                    for q in questions
-                ]
-                st.download_button(
-                    label="Download Questions",
-                    data=json.dumps({"questions": questions_dict}, indent=2),
-                    file_name="generated_questions.json",
-                    mime="application/json"
-                )
-            
+            # Ensure we have a valid response
+            if response and hasattr(response, 'questions'):
+                st.subheader("Generated Questions")
+                
+                for i, question in enumerate(response.questions, 1):
+                    with st.expander(f"Question {i}", expanded=True):
+                        st.markdown(f"**Question:** {question.question}")
+                        st.write("**Options:**")
+                        for j, opt in enumerate(question.options, 1):
+                            st.write(f"{j}. {opt}")
+                        st.success(f"**Correct Answer:** {question.answer}")
+                        if hasattr(question, 'explanation'):
+                            st.info(f"**Explanation:** {question.explanation}")
+                
+                # Download feature with error handling
+                try:
+                    questions_dict = []
+                    for q in response.questions:
+                        question_data = {
+                            "question": q.question,
+                            "options": q.options,
+                            "answer": q.answer
+                        }
+                        if hasattr(q, 'explanation'):
+                            question_data["explanation"] = q.explanation
+                        questions_dict.append(question_data)
+                    
+                    if questions_dict:
+                        json_str = json.dumps({"questions": questions_dict}, indent=2, ensure_ascii=False)
+                        st.download_button(
+                            label="Download Questions",
+                            data=json_str,
+                            file_name="generated_questions.json",
+                            mime="application/json"
+                        )
+                except Exception as json_error:
+                    st.warning("Could not create download file, but questions are displayed above.")
+            else:
+                st.error("No questions were generated. Please try again.")
+                
         except Exception as e:
-            st.error(f"Generation failed: {str(e)}")
-            st.info("Please check your inputs and try again")
+            st.error("Generation failed. Please check your inputs and try again.")
+            st.info(f"Error details: {str(e)}")
 
 st.markdown("---")
 st.caption("Note: Generated content should be reviewed by subject matter experts")
