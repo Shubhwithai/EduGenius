@@ -1,61 +1,79 @@
 import streamlit as st
 from educhain import Educhain, LLMConfig
 from langchain_deepseek import ChatDeepSeek
+import json
 
-def main():
-    st.set_page_config(
-        page_title="Advanced MCQ Generator",
-        page_icon="🧠",
-        layout="centered"
-    )
-    
-    st.title("📚 AI-Powered MCQ Generator")
-    st.markdown("Generate advanced multiple-choice questions using DeepSeek AI")
-    
-    # Initialize models and client
+# Initialize Educhain with DeepSeek
+@st.cache_resource
+def initialize_llm():
     llm = ChatDeepSeek(model="deepseek-chat")
-    deepseek_config = LLMConfig(custom_model=llm)
-    client = Educhain(config=deepseek_config)
-    
-    # Input parameters
-    with st.sidebar:
-        st.header("Configuration")
-        topic = st.text_input("Topic", value="AI Agents")
-        num_questions = st.number_input("Number of Questions", 
-                                      min_value=1, max_value=10, value=3)
-        difficulty = st.select_slider("Difficulty Level", 
-                                    options=["Easy", "Medium", "Hard"], value="Hard")
-        custom_instructions = st.text_area("Custom Instructions", 
-                                         value="Include recent discoveries")
-    
-    # Main content area
-    if st.button("✨ Generate Questions", use_container_width=True):
-        with st.spinner("Generating advanced MCQs..."):
-            try:
-                advanced_mcq = client.qna_engine.generate_questions(
-                    topic=topic,
-                    num=num_questions,
-                    question_type="Multiple Choice",
-                    difficulty_level=difficulty,
-                    custom_instructions=custom_instructions
-                )
-                
-                st.success("Successfully generated questions!")
-                st.divider()
-                
-                # Display results in tabs
-                tab1, tab2 = st.tabs(["Structured Format", "JSON Format"])
-                
-                with tab1:
-                    st.subheader("Structured Questions")
-                    st.write(advanced_mcq.show())
-                
-                with tab2:
-                    st.subheader("JSON Output")
-                    st.json(advanced_mcq.json())
-            
-            except Exception as e:
-                st.error(f"Error generating questions: {str(e)}")
+    llm_config = LLMConfig(custom_model=llm)
+    return Educhain(llm_config)
 
-if __name__ == "__main__":
-    main()
+client = initialize_llm()
+
+# Streamlit UI
+st.title("🧠 AI MCQ Generator with DeepSeek")
+st.write("Create multiple-choice questions for your educational needs.")
+
+# Configuration
+with st.sidebar:
+    st.header("Settings")
+    topic = st.text_input("Topic", "Artificial Intelligence")
+    num_questions = st.slider("Number of Questions", 1, 10, 5)
+    difficulty = st.selectbox("Difficulty", ["Easy", "Medium", "Hard"])
+    
+    use_cases = {
+        "Exam Questions": {"difficulty": "Hard", "hint": "Include common misconceptions"},
+        "Practice Quiz": {"difficulty": "Medium", "hint": "Add explanations"},
+        "Custom": {"difficulty": difficulty, "hint": ""}
+    }
+    selected_case = st.selectbox("Use Case", list(use_cases.keys()))
+
+# Apply use case presets
+if selected_case != "Custom":
+    preset = use_cases[selected_case]
+    difficulty = preset["difficulty"]
+    custom_hint = preset["hint"]
+else:
+    custom_hint = st.text_area("Additional Instructions")
+
+# Generation and display
+if st.button("Generate MCQs"):
+    with st.spinner(f"Creating {num_questions} {difficulty} questions about {topic}..."):
+        try:
+            # Generate questions
+            result = client.generate(
+                topic=topic,
+                num_questions=num_questions,
+                difficulty=difficulty,
+                additional_instructions=custom_hint
+            )
+            
+            # Display results
+            st.subheader("Generated Questions")
+            for i, question in enumerate(result.get("questions", []), 1):
+                with st.expander(f"Question {i}", expanded=True):
+                    st.markdown(f"**{question['question']}**")
+                    st.write("Options:")
+                    for opt in question.get("options", []):
+                        st.write(f"- {opt}")
+                    st.success(f"Answer: {question.get('answer', '')}")
+                    if question.get("explanation"):
+                        st.info(f"Explanation: {question['explanation']}")
+            
+            # Download feature
+            if result.get("questions"):
+                st.download_button(
+                    label="Download Questions",
+                    data=json.dumps(result, indent=2),
+                    file_name="generated_questions.json",
+                    mime="application/json"
+                )
+            
+        except Exception as e:
+            st.error(f"Generation failed: {str(e)}")
+            st.info("Please check your inputs and try again.")
+
+st.markdown("---")
+st.caption("Please remember that while this tool can be a great starting point, it's essential to have a subject matter expert review the generated content for accuracy and relevance.")
