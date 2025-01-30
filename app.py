@@ -10,60 +10,6 @@ st.set_page_config(
     initial_sidebar_state="expanded",
 )
 
-st.markdown(
-    """
-    <style>
-    [data-testid="stAppViewContainer"] {
-    background-color: #0e1117;
-    color: white;
-    }
-     [data-testid="stHeader"] {
-        background-color: rgba(0,0,0,0);
-    }
-    [data-testid="stToolbar"] {
-        right: 2rem;
-    }
-    [data-testid="stTextInput"] > div > div > div {
-        background-color: #1f2937;
-        color: white;
-    }
-     [data-testid="stNumberInput"] > div > div > div {
-        background-color: #1f2937;
-        color: white;
-         }
-    [data-testid="stNumberInput"] input {
-        color: white; /* Fix number input text color */
-        }
-    [data-testid="stButton"] button {
-        background-color: #4CAF50;
-        color: white;
-    }
-    [data-testid="stTextArea"] > div > div > div {
-        background-color: #1f2937;
-        color: white;
-    }
-    [data-testid="stSelectbox"] > div > div > div {
-        background-color: #1f2937;
-        color: white;
-    }
-     [data-testid="stSidebar"] {
-        background-color: #1f2937;
-        color: white;
-    }
-    [data-testid="stSidebar"] h1, h2, h3, h4, h5, h6, p, ul, ol, li {
-        color: white;
-    }
-    [data-testid="stMarkdownContainer"] h1, h2, h3, h4, h5, h6, p, ul, ol, li {
-        color: white;
-    }
-    [data-testid="stMarkdownContainer"] {
-        color: white;
-    }
-   </style>
-    """,
-    unsafe_allow_html=True,
-)
-
 # Title
 st.title("🌌 Educhain MCQ Generator")
 st.markdown("Generate Multiple Choice Questions using DeepSeek AI")
