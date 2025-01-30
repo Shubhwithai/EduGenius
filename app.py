@@ -52,21 +52,34 @@ if st.button("Generate MCQs"):
             
             # Display results
             st.subheader("Generated Questions")
-            for i, question in enumerate(result.get("questions", []), 1):
+            # Convert result to list if it's not already
+            questions = result if isinstance(result, list) else result.questions
+            
+            for i, question in enumerate(questions, 1):
                 with st.expander(f"Question {i}", expanded=True):
-                    st.markdown(f"**{question['question']}**")
+                    st.markdown(f"**{question.question}**")
                     st.write("Options:")
-                    for opt in question.get("options", []):
+                    for opt in question.options:
                         st.write(f"- {opt}")
-                    st.success(f"Answer: {question.get('answer', '')}")
-                    if question.get("explanation"):
-                        st.info(f"Explanation: {question['explanation']}")
+                    st.success(f"Answer: {question.answer}")
+                    if hasattr(question, 'explanation'):
+                        st.info(f"Explanation: {question.explanation}")
             
             # Download feature
-            if result.get("questions"):
+            if questions:
+                # Convert questions to dictionary format for JSON
+                questions_dict = [
+                    {
+                        "question": q.question,
+                        "options": q.options,
+                        "answer": q.answer,
+                        "explanation": getattr(q, 'explanation', '')
+                    }
+                    for q in questions
+                ]
                 st.download_button(
                     label="Download Questions",
-                    data=json.dumps(result, indent=2),
+                    data=json.dumps({"questions": questions_dict}, indent=2),
                     file_name="generated_questions.json",
                     mime="application/json"
                 )
