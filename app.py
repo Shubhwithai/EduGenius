@@ -12,111 +12,44 @@ def initialize_llm():
 client = initialize_llm()
 
 # Streamlit UI
-st.title("🧠 AI MCQ Generator with DeepSeek")
-st.write("Generate advanced multiple-choice questions for various educational use cases")
+st.title("🧠 AI MCQ Generator")
+st.write("Generate MCQs instantly with DeepSeek")
 
-# Use Case Selection
-use_case = st.sidebar.selectbox("Select Use Case", [
-    "Academic Exams",
-    "Student Practice",
-    "Corporate Training",
-    "Research Evaluation",
-    "Custom Scenario"
-])
+# Simple configuration
+topic = st.text_input("Enter topic", "Artificial Intelligence")
+num_questions = st.slider("Number of questions", 1, 5, 3)
+difficulty = st.selectbox("Difficulty level", ["Easy", "Medium", "Hard"])
 
-# Configuration Panel
-st.sidebar.header("Configuration")
-topic = st.sidebar.text_input("Topic", "AI Agents")
-num_questions = st.sidebar.slider("Number of Questions", 1, 10, 3)
-difficulty = st.sidebar.selectbox("Difficulty", ["Easy", "Medium", "Hard"])
-custom_instructions = st.sidebar.text_area("Custom Instructions", "Include recent discoveries")
-
-# Use Case Descriptions
-use_cases = {
-    "Academic Exams": {
-        "desc": "Generate high-quality exam questions with detailed distractors",
-        "params": {"difficulty": "Hard", "custom": "Include common misconceptions"}
-    },
-    "Student Practice": {
-        "desc": "Create practice questions with instant feedback capability",
-        "params": {"difficulty": "Medium", "custom": "Include step-by-step explanations"}
-    },
-    "Corporate Training": {
-        "desc": "Develop technical assessments for employee training",
-        "params": {"difficulty": "Hard", "custom": "Focus on real-world applications"}
-    },
-    "Research Evaluation": {
-        "desc": "Create evaluation metrics for research comprehension",
-        "params": {"difficulty": "Hard", "custom": "Include recent publications"}
-    },
-    "Custom Scenario": {
-        "desc": "Configure your own parameters for specialized needs",
-        "params": {}
-    }
-}
-
-# Display selected use case description
-st.header(f"Use Case: {use_case}")
-st.write(use_cases[use_case]["desc"])
-
-# Apply use case presets
-if use_case != "Custom Scenario":
-    preset = use_cases[use_case]["params"]
-    difficulty = preset["difficulty"]
-    custom_instructions = preset["custom"]
-
-# In the question generation section:
 if st.button("Generate Questions"):
-    with st.spinner("Generating advanced MCQs..."):
+    with st.spinner("Creating questions..."):
         try:
             mcqs = client.qna_engine.generate_questions(
                 topic=topic,
                 num=num_questions,
                 question_type="Multiple Choice",
-                difficulty_level=difficulty,
-                custom_instructions=custom_instructions
+                difficulty_level=difficulty
             )
             
-            st.success("Generated Questions:")
-            for i, qna in enumerate(mcqs.questions, 1):
-                with st.expander(f"Question {i}: {qna.question}", expanded=True):
-                    st.markdown(f"**Question:** {qna.question}")
+            for i, question in enumerate(mcqs.questions, 1):
+                with st.expander(f"Question {i}", expanded=True):
+                    st.markdown(f"**{question.question}**")
                     
                     # Display options with letters
-                    options = qna.options
-                    for j, option in enumerate(options, 1):
-                        st.markdown(f"{chr(64+j)}. {option}")
+                    for j, option in enumerate(question.options, 1):
+                        st.write(f"{chr(64+j)}. {option}")
                     
-                    # Check response structure
-                    if hasattr(qna, 'correct_option'):
-                        # If using index-based correct answer
-                        correct_answer = options[qna.correct_option-1]
-                        st.success(f"**Correct Answer:** {correct_answer}")
-                    elif hasattr(qna, 'answer'):
-                        # If using direct answer text
-                        st.success(f"**Correct Answer:** {qna.answer}")
+                    # Handle different answer formats
+                    if hasattr(question, 'correct_answer'):
+                        answer = question.correct_answer
+                    elif hasattr(question, 'correct_option'):
+                        answer = question.options[question.correct_option-1]
                     else:
-                        st.error("Could not find correct answer in response")
+                        answer = "Could not determine correct answer"
                     
-                    if qna.explanation:
-                        st.info(f"**Explanation:** {qna.explanation}")
-            
-            st.download_button(
-                label="Download as JSON",
-                data=mcqs.json(),
-                file_name="generated_questions.json",
-                mime="application/json"
-            )
-            
-        except Exception as e:
-            st.error(f"Error generating questions: {str(e)}")
+                    st.success(f"**Answer:** {answer}")
+                    
+                    if hasattr(question, 'explanation'):
+                        st.info(f"*Explanation:* {question.explanation}")
 
-# Use Case Examples
-st.sidebar.header("Example Use Cases")
-st.sidebar.markdown("""
-1. **University Professors**: Create exam banks
-2. **EdTech Platforms**: Generate quiz content
-3. **HR Departments**: Technical screening tests
-4. **Researchers**: Validate comprehension of papers
-5. **Students**: Create study guides
-""")
+        except Exception as e:
+            st.error(f"Failed to generate questions: {str(e)}")
