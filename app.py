@@ -1,6 +1,6 @@
 import streamlit as st
-from educhain import Educhain, LLMConfig  # Assuming you have these classes
-from langchain_deepseek import ChatDeepSeek  # Assuming you use Langchain DeepSeek
+from educhain import Educhain, LLMConfig
+from langchain_deepseek import ChatDeepSeek
 import json
 
 # Initialize Educhain with DeepSeek
@@ -14,9 +14,9 @@ client = initialize_llm()
 
 # Streamlit UI
 st.title("🧠 AI MCQ Generator with DeepSeek")
-st.write("Create multiple-choice questions for your educational needs.")
+st.write("Generate multiple-choice questions for your educational needs.")
 
-# Configuration
+# Sidebar Configuration
 with st.sidebar:
     st.header("Settings")
     topic = st.text_input("Topic", "Artificial Intelligence")
@@ -32,14 +32,12 @@ with st.sidebar:
 
 # Apply use case presets
 if selected_case != "Custom":
-    preset = use_cases[selected_case]
-    difficulty = preset["difficulty"]
-    custom_hint = preset["hint"]
+    difficulty = use_cases[selected_case]["difficulty"]
+    custom_hint = use_cases[selected_case]["hint"]
 else:
     custom_hint = st.text_area("Additional Instructions")
 
-
-# Modified generate function (assuming Educhain class has a generate method)
+# Function to Generate MCQs
 def generate_mcqs(client, topic, num_questions, difficulty, custom_hint):
     try:
         result = client.qna_engine.generate_questions(
@@ -49,25 +47,18 @@ def generate_mcqs(client, topic, num_questions, difficulty, custom_hint):
             additional_instructions=custom_hint
         )
         return result
-
     except Exception as e:
-       
         st.error(f"Error during generation: {e}")
+        st.info("Please check your inputs, network, and try again later.")
+        return None
 
-        st.info("Please check your inputs, network, and try again later. If the error persists, it may indicate an issue with the LLM service.")
-        return None  # Return None to avoid further processing
-
-# Generation and display
+# Generate and Display MCQs
 if st.button("Generate MCQs"):
     with st.spinner(f"Creating {num_questions} {difficulty} questions about {topic}..."):
-        
         result = generate_mcqs(client, topic, num_questions, difficulty, custom_hint)
-
         if result:
-            # Display results
             st.subheader("Generated Questions")
-            # Changed to access `result.questions` directly instead of .get("questions")
-            for i, question in enumerate(result.questions, 1): 
+            for i, question in enumerate(result.questions, 1):
                 with st.expander(f"Question {i}", expanded=True):
                     st.markdown(f"**{question['question']}**")
                     st.write("Options:")
@@ -76,20 +67,15 @@ if st.button("Generate MCQs"):
                     st.success(f"Answer: {question.get('answer', '')}")
                     if question.get("explanation"):
                         st.info(f"Explanation: {question['explanation']}")
-            
+
             # Download feature
-            # Assuming that `result` itself can be converted to JSON since it contains the questions
-            if result.questions: 
+            if result.questions:
                 st.download_button(
                     label="Download Questions",
                     data=json.dumps(result.__dict__, indent=2),
                     file_name="generated_questions.json",
                     mime="application/json"
                 )
-            
-        else:
-           # Error message already shown in generate_mcqs function, no need to duplicate it
-           pass
 
 st.markdown("---")
-st.caption("Please remember that while this tool can be a great starting point, it's essential to have a subject matter expert review the generated content for accuracy and relevance.")
+st.caption("Ensure a subject matter expert reviews the generated content for accuracy and relevance.")
