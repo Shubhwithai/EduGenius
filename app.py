@@ -1,6 +1,6 @@
 import streamlit as st
-from educhain import Educhain, LLMConfig
-from langchain_deepseek import ChatDeepSeek
+from educhain import Educhain, LLMConfig  # Assuming you have these classes
+from langchain_deepseek import ChatDeepSeek  # Assuming you use Langchain DeepSeek
 import json
 
 # Initialize Educhain with DeepSeek
@@ -38,18 +38,31 @@ if selected_case != "Custom":
 else:
     custom_hint = st.text_area("Additional Instructions")
 
+
+# Modified generate function (assuming Educhain class has a generate method)
+def generate_mcqs(client, topic, num_questions, difficulty, custom_hint):
+    try:
+        result = client.generate(
+            topic=topic,
+            num_questions=num_questions,
+            difficulty=difficulty,
+            additional_instructions=custom_hint
+        )
+        return result
+
+    except Exception as e:
+       
+        st.error(f"Error during generation: {e}")
+
+        st.info("Please check your inputs, network, and try again later. If the error persists, it may indicate an issue with the LLM service.")
+        return None  # Return None to avoid further processing
 # Generation and display
 if st.button("Generate MCQs"):
     with st.spinner(f"Creating {num_questions} {difficulty} questions about {topic}..."):
-        try:
-            # Generate questions
-            result = client.qna_engine.generate_questions(
-                topic=topic,
-                num_questions=num_questions,
-                difficulty=difficulty,
-                additional_instructions=custom_hint
-            )
-            
+        
+        result = generate_mcqs(client, topic, num_questions, difficulty, custom_hint)
+
+        if result:
             # Display results
             st.subheader("Generated Questions")
             for i, question in enumerate(result.get("questions", []), 1):
@@ -71,9 +84,9 @@ if st.button("Generate MCQs"):
                     mime="application/json"
                 )
             
-        except Exception as e:
-            st.error(f"Generation failed: {str(e)}")
-            st.info("Please check your inputs and try again.")
+        else:
+           # Error message already shown in generate_mcqs function, no need to duplicate it
+           pass
 
 st.markdown("---")
 st.caption("Please remember that while this tool can be a great starting point, it's essential to have a subject matter expert review the generated content for accuracy and relevance.")
