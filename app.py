@@ -35,6 +35,10 @@ if st.button("Generate MCQs"):
                 additional_instructions=custom_hint
             )
             
+            # Debugging: Print the response to inspect its structure
+            st.write("Debugging - Raw Response:")
+            st.write(response)  # Display the raw response for debugging
+            
             # Check if response is valid and contains questions
             if response and hasattr(response, 'questions') and response.questions:
                 st.subheader("Generated Questions")
