@@ -6,7 +6,8 @@ from langchain_deepseek import ChatDeepSeek
 @st.cache_resource
 def initialize_llm():
     llm = ChatDeepSeek(model="deepseek-chat")
-    return Educhain(llm_config=LLMConfig(custom_model=llm))
+    llm_config=LLMConfig(custom_model=llm)
+    return Educhain(llm_config)
 
 client = initialize_llm()
 
