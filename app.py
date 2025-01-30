@@ -77,25 +77,22 @@ def generate_questions():
 if st.button("Generate Questions", type="primary", use_container_width=True):
     questions = generate_questions()
     
-    if questions:
-        st.success(f"Successfully generated {len(questions)} questions!")
-        st.divider()
-        
-        # Display Questions
-        for i, q in enumerate(questions, 1):
-            with st.expander(f"Question #{i}", expanded=True):
-                st.markdown(f"#### {q['question']}")
+   if questions:
+    st.success(f"Successfully generated {len(questions)} questions!")
+    st.divider()
+    
+    # Display Questions with validation
+    for i, q in enumerate(questions, 1):
+        with st.expander(f"Question #{i}", expanded=True):
+            # Validate question structure
+            if not isinstance(q, dict):
+                st.warning("Invalid question format")
+                continue
                 
-                cols = st.columns(2)
-                with cols[0]:
-                    st.write("**Options:**")
-                    for option in q.get('options', []):
-                        st.write(f"- {option}")
-                
-                with cols[1]:
-                    st.success(f"**Correct Answer:** {q.get('answer', '')}")
-                    if q.get('explanation'):
-                        st.info(f"**Explanation:** {q['explanation']}")
+            # Ensure required fields exist
+            q.setdefault('question', 'Question text missing')
+            q.setdefault('options', [])
+            q.setdefault('answer', 'No answer provided')
         
         # Download Feature
         json_data = json.dumps(
