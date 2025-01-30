@@ -1,6 +1,8 @@
 import streamlit as st
 import json
 from typing import Optional, List, Dict
+from educhain import Educhain, LLMConfig
+from langchain_deepseek import ChatDeepSeek
 
 # Page configuration and title
 st.set_page_config(page_title="MCQ Generator", page_icon="🎯", layout="wide")
