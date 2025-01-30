@@ -17,30 +17,19 @@ st.title("🧠 AI MCQ Generator with DeepSeek")
 st.write("Generate multiple-choice questions for educational purposes")
 
 # Configuration
-with st.sidebar:
-    st.header("Settings")
-    topic = st.text_input("Topic", "Artificial Intelligence")
-    num_questions = st.slider("Number of Questions", 1, 10, 5)
-    difficulty = st.selectbox("Difficulty", ["Easy", "Medium", "Hard"])
-    
-    use_cases = {
-        "Exam Questions": {"difficulty": "Hard", "hint": "Include common misconceptions"},
-        "Practice Quiz": {"difficulty": "Medium", "hint": "Add explanations"},
-        "Custom": {"difficulty": difficulty, "hint": ""}
-    }
-    selected_case = st.selectbox("Use Case", list(use_cases.keys()))
+st.header("Settings")
+topic = st.text_input("Topic", "Artificial Intelligence")
+custom_hint = st.text_area("Additional Instructions (Optional)")
 
-# Apply use case presets
-if selected_case != "Custom":
-    preset = use_cases[selected_case]
-    difficulty = preset["difficulty"]
-    custom_hint = preset["hint"]
-else:
-    custom_hint = st.text_area("Additional Instructions")
+with st.sidebar:
+    num_questions = st.slider("Number of Questions", 1, 10, 5)
+    # Force num_questions to be 1 regardless of slider value
+    num_questions = 1
+    difficulty = st.selectbox("Difficulty", ["Easy", "Medium", "Hard"])
 
 # Generation and display
 if st.button("Generate MCQs"):
-    with st.spinner(f"Creating {num_questions} {difficulty} questions about {topic}..."):
+    with st.spinner(f"Creating question about {topic}..."):
         try:
             # Generate questions
             result = client.qna_engine.generate_questions(
@@ -51,12 +40,14 @@ if st.button("Generate MCQs"):
             )
             
             # Display results
-            st.subheader("Generated Questions")
+            st.subheader("Generated Question")
             # Convert result to list if it's not already
             questions = result if isinstance(result, list) else result.questions
             
-            for i, question in enumerate(questions, 1):
-                with st.expander(f"Question {i}", expanded=True):
+            # Only process the first question
+            if questions:
+                question = questions[0]
+                with st.expander("Question 1", expanded=True):
                     st.markdown(f"**{question.question}**")
                     st.write("Options:")
                     for opt in question.options:
@@ -65,22 +56,17 @@ if st.button("Generate MCQs"):
                     if hasattr(question, 'explanation'):
                         st.info(f"Explanation: {question.explanation}")
             
-            # Download feature
-            if questions:
-                # Convert questions to dictionary format for JSON
-                questions_dict = [
-                    {
-                        "question": q.question,
-                        "options": q.options,
-                        "answer": q.answer,
-                        "explanation": getattr(q, 'explanation', '')
-                    }
-                    for q in questions
-                ]
+                # Download feature
+                questions_dict = [{
+                    "question": question.question,
+                    "options": question.options,
+                    "answer": question.answer,
+                    "explanation": getattr(question, 'explanation', '')
+                }]
                 st.download_button(
-                    label="Download Questions",
+                    label="Download Question",
                     data=json.dumps({"questions": questions_dict}, indent=2),
-                    file_name="generated_questions.json",
+                    file_name="generated_question.json",
                     mime="application/json"
                 )
             
