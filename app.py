@@ -43,7 +43,7 @@ if st.button("Generate MCQs"):
     with st.spinner(f"Creating {num_questions} {difficulty} questions about {topic}..."):
         try:
             # Generate questions
-            result = client.generate(
+            result = client.qna_engine.generate_questions(
                 topic=topic,
                 num_questions=num_questions,
                 difficulty=difficulty,
